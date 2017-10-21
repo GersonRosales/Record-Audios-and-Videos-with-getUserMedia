@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/css/materialize.min.css">
+	<title>Example 4</title>
+</head>
+<body>
+	<a href="./index.html"> << back</a>
+	<div class="center-align">
+		<h1>Example 4 - <span>Version_8 </span></h1>
+		<p>getUserMedia() - getTracks()</p>
+		<audio controls autoplay></audio>
+		<br>
+		<button class="btn waves-effect waves-light" onclick="start()" id="startBtn">Start</button>
+		<button class="btn waves-effect waves-light" id="stopBtn">Stop</button>
+		<br>
+		<br>
+		<button class="btn waves-effect waves-light" onclick="showCode()">Show Code</button>
+	</div>
+	<hr>
+	<pre style="font-family: GillSans, Calibri, Trebuchet, sans-serif;" class="hide"></pre>
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>
+	<script class="scriptCode">
+		let startBtn = document.getElementById('startBtn');
+		let stopBtn = document.getElementById('stopBtn');
+		let audioElement = document.querySelector('audio');
+		let pre = document.querySelector('pre');
+
+		function start() {
+			navigator.mediaDevices.getUserMedia({ audio: true, video: false }) 																						/** ask permission of the user for use microphone or camera  */
+			.then(gotStreamMethod2)
+			.catch(logError);
+		}
+
+		function gotStreamMethod2(stream) {
+			window.stream = stream; 																																											/** make stream available to console*/
+			audioElement.srcObject = stream;
+			track = stream.getTracks()[0];
+
+			stopBtn.addEventListener('click', ()=> {
+				track.stop();
+			});
+		}
+
+		function logError(error) {
+			alert(error);
+			console.log(error);
+		}
+
+    function showCode() {
+      pre.classList.toggle('hide');
+    }
+
+		pre.innerHTML = document.querySelector('.scriptCode').innerHTML;
+	</script>
+</body>
+</html>

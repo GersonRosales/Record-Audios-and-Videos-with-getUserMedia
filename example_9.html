@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/css/materialize.min.css">
+	<title>Example 9</title>
+</head>
+
+<body>
+	<a href="./index.html"> << back</a>
+	<div class="center-align">
+		<h1>Example 9 - <span>Version_9 </span></h1>
+		<audio controls></audio>
+		<br>
+		<pre></pre>	
+		<button class="btn waves-effect waves-light" id="startBtn">Start</button>
+		<button class="btn waves-effect waves-light" id="stopBtn">Stop</button>
+	</div>
+
+	<script src="./recorder.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>
+  <script>
+		let startBtn = document.querySelector('#startBtn');
+		let stopBtn = document.querySelector('#stopBtn');
+		let audio = document.querySelector('audio');
+		let audio_context;
+		let recorder;
+		let track;
+
+		function startUserMedia(stream) {
+			let input = audio_context.createMediaStreamSource(stream);
+			track = stream.getTracks()[0];
+			recorder = new Recorder(input);
+			recorder.record();
+		}
+
+		function stopRecording(button) {
+			audio_context.close();
+			recorder.stop();
+			track.stop();
+			createDownloadLink();
+			recorder.clear();
+		}
+
+		function createDownloadLink() {
+			recorder.exportWAV(function(blob) {
+				console.log(blob);
+				let url = URL.createObjectURL(blob);
+				audio.src = url;
+			});
+		}
+
+		stopBtn.addEventListener('click', ()=>{
+			stopRecording();
+		})
+
+		startBtn.addEventListener('click', ()=>{
+			try {
+				window.AudioContext = window.AudioContext || window.webkitAudioContext;
+				navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia;
+				window.URL = window.URL || window.webkitURL;
+				audio_context = new AudioContext;
+				console.log('navigator.getUserMedia ' + (navigator.getUserMedia ? 'available.' : 'not present!'));
+			} catch (e) {
+				alert('No web audio support in this browser!');
+			}
+			
+			navigator.getUserMedia({audio: true}, startUserMedia, function(e) {
+				console.log('No live audio input: ' + e);
+			});
+		});
+  </script>
+</body>
+</html>

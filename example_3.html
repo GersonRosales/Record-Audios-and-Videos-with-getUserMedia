@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+	 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/css/materialize.min.css">
+	<title>Example 3</title>
+</head>
+<body>
+	<a href="./index.html"> << back</a>
+	<div class="center-align">
+		<h1>Example 3 - <span>Version_8 </span></h1>
+		<p>getUserMedia() - getAudioTracks() - AudioContext() - createMediaStreamSource()</p>
+		<button class="btn waves-effect waves-light" onclick="start()" id="startBtn">Start</button>
+		<button class="btn waves-effect waves-light" id="stopBtn">Stop</button>
+		<audio controls></audio>
+		<br>
+		<a id="download" class="hide">Download Audio</a>
+    <br>
+		<button class="btn waves-effect waves-light" onclick="showCode()">Show Code</button>
+	</div>
+	<hr>
+	<pre style="font-family: GillSans, Calibri, Trebuchet, sans-serif;" class="hide"></pre>
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>
+	<script class="scriptCode">
+		let startBtn = document.getElementById('startBtn');
+		let stop_Btn = document.getElementById('stopBtn');
+		let pre = document.querySelector('pre');
+		let downloadLink = document.getElementById('download');
+		let arrayAudio = [];
+		let audioElement = document.querySelector('audio');
+
+		function start() {
+			navigator.mediaDevices.getUserMedia({ audio: true, video: false })																									/** ask permission of the user for use microphone or camera  */
+			.then(gotStreamMethod)
+			.catch(logError);
+		}
+
+		function gotStreamMethod(stream) {
+			console.log('stream');  
+			console.log(stream);
+
+			let dataAudioTracks = stream.getAudioTracks();
+
+			dataAudioTracks.forEach(function (track) {
+				console.log(track);
+
+				track.onended = function () {
+					console.log(stream.active);
+					console.log(track.readyState);
+					startBtn.disabled = false;
+				};
+				
+				window.AudioContext = window.AudioContext || window.webkitAudioContext;																						/** detecte the correct AudioContext for the browser */
+				let audioContext = new AudioContext();
+				let mediaStreamSource = audioContext.createMediaStreamSource(stream);
+				let processor = audioContext.createScriptProcessor(1024, 1, 1);
+
+				// mediaStreamSource.connect(audioContext.destination);
+				processor.connect(audioContext.destination);
+
+				processor.onaudioprocess = function(e) {
+					// Do something with the data, i.e Convert this to WAV
+					console.log(e.inputBuffer);
+					arrayAudio.push(e.inputBuffer);
+					// console.log(e.inputBuffer.getChannelData(0));
+					// arrayAudio.push(e.inputBuffer.getChannelData(0));
+					
+					/*arrayAudio = e.outputBuffer.getChannelData(0);
+					for (var i = 0; i < arrayAudio.length; i++) {
+						arrayAudio[i] = Math.random();
+					}*/
+
+				};
+
+				stop_Btn.addEventListener('click', function(){
+					console.log('click Stop');
+					track.stop();
+					audioContext.close();
+					audioElement.src = URL.createObjectURL(new Blob(arrayAudio));
+					downloadLink.href = URL.createObjectURL(new Blob(arrayAudio));
+					downloadLink.download = 'testAudio.wav';
+					downloadLink.classList.remove('hide');
+				});
+			});
+		}
+
+		function logError(error) {
+			alert(error);
+			console.log(error);
+		}
+
+    function showCode() {
+      pre.classList.toggle('hide');
+		}
+		
+		pre.innerHTML = document.querySelector('.scriptCode').innerHTML;
+	</script>
+</body>
+</html>

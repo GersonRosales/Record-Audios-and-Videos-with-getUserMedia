@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/css/materialize.min.css">
+	<title>Example 8</title>
+</head>
+
+<body>
+	<a href="./index.html"> << back</a>
+	<div class="center-align">
+		<h1>Example 8 - <span>Version_8 </span></h1>
+		<br>
+		<pre></pre>	
+		<button class="btn waves-effect waves-light" onclick="startRecording()" id="startBtn">Start</button>
+		<button class="btn waves-effect waves-light" id="stopBtn">Stop</button>
+	</div>
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>
+	<script class="script">
+		if (navigator.mediaDevices) {
+			console.log('getUserMedia supported.');			
+		} else {
+			console.log('getUserMedia not supported on your browser!');
+		}
+
+		let stopBtn = document.querySelector('#stopBtn');
+		let pre = document.querySelector('pre');
+		let myScript = document.querySelector('.script');
+		let freqResponseOutput = document.querySelector('.freq-response-output');
+		let audioCtx;
+		let track;
+		let myFrequencyArray = new Float32Array(5); 																			  // create float32 arrays for getFrequencyResponse
+		myFrequencyArray[0] = 1000;
+		myFrequencyArray[1] = 2000;
+		myFrequencyArray[2] = 3000;
+		myFrequencyArray[3] = 4000;
+		myFrequencyArray[4] = 5000;
+		let magResponseOutput = new Float32Array(5);
+		let phaseResponseOutput = new Float32Array(5);
+
+		function startRecording() {																													 // getUserMedia block - grab stream put it into a MediaStreamAudioSourceNode also output the sound into a audio element 
+			navigator.mediaDevices.getUserMedia ({audio: true, video: false})
+			.then(function(stream) {				
+				window.AudioContext = window.AudioContext || window.webkitAudioContext;					 // Create a MediaStreamAudioSourceNode Feed the HTMLMediaElement into it
+				audioCtx = new AudioContext();
+				track = stream.getTracks()[0];
+				let source = audioCtx.createMediaStreamSource(stream);
+				let biquadFilter = audioCtx.createBiquadFilter();																	// Create a biquadfilter
+
+				biquadFilter.type = "lowshelf";
+				biquadFilter.frequency.value = 1000;
+				source.connect(biquadFilter);																											// biquadFilter.gain.value = range.value; connect the AudioBufferSourceNode to the gainNode and the gainNode to the destination, so we can play the music and adjust the volume using the mouse cursor
+				biquadFilter.connect(audioCtx.destination);
+				range.oninput = function() {
+					biquadFilter.gain.value = 5;
+				}
+
+				function calcFrequencyResponse() {
+					biquadFilter.getFrequencyResponse(myFrequencyArray, magResponseOutput, phaseResponseOutput);
+					for (i = 0; i <= myFrequencyArray.length-1; i++){
+						console.log('' + myFrequencyArray[i] + 'Hz: Magnitude ' + magResponseOutput[i] + ', Phase ' + phaseResponseOutput[i] + ' radians.');
+					}
+				}
+				calcFrequencyResponse();
+			})
+			.catch(function(err) {
+				console.log('The following gUM error occured: ' + err);
+			});
+		}
+
+		function stopRecording(button) {
+			track.stop();
+		}
+
+		stopBtn.addEventListener('click', ()=>{
+			stopRecording();
+		})
+	</script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+	 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/css/materialize.min.css">
+	<title>Example 1</title>
+</head>
+<body>
+	<a href="./index.html"> << back</a>
+	<div class="center-align">
+		<h1>Example 1 - <span>Version_8 </span></h1>
+		<p>getUserMedia() - AudioContext() - <a href="https://github.com/mattdiamond/Recorderjs">RecorderJS</a> - exportWAV()</p>
+		<audio controls autoplay></audio>
+		<br>
+		<button class="btn waves-effect waves-light" id="startRecording" >Start</button>
+    <button class="btn waves-effect waves-light" id="stopRecording">Stop</button>
+    <br>
+    <br>
+		<button class="btn waves-effect waves-light" onclick="showCode()">Show Code</button>
+	</div>
+	<hr>
+	<pre style="font-family: GillSans, Calibri, Trebuchet, sans-serif;" class="hide"></pre>
+
+	<script src="./recorder.js"> </script>
+	<script src="https://cdn.webrtc-experiment.com/MediaStreamRecorder.js"> </script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>
+	<script class="scriptCode">
+		let recorder;
+		let context;
+		let audio = document.querySelector('audio');
+		let start = document.querySelector('#startRecording');
+		let stop = document.querySelector('#stopRecording');
+		let pre = document.querySelector('pre');
+
+		window.URL = window.URL || window.webkitURL;
+		navigator.getUserMedia  = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+
+		let onFail = function(e) {
+			alert('Error '+e);
+			console.log('Rejected!', e);
+		};
+
+		let onSuccess = function(s) {
+			s.getAudioTracks().forEach(function (track) {
+				console.log('Recording...');
+				console.log(track);
+				window.AudioContext = window.AudioContext || window.webkitAudioContext;    										/** detecte the correct AudioContext for the browser */
+				context = new AudioContext();
+				var mediaStreamSource = context.createMediaStreamSource(s);
+				recorder = new Recorder(mediaStreamSource);
+				recorder.record();
+
+				stop.addEventListener('click', ()=>{
+					console.log('Stop Recording...');
+					recorder.stop();
+					track.stop();
+					recorder.exportWAV(function(s) {
+						audio.src = window.URL.createObjectURL(s);
+					});
+				});
+			});
+		}
+
+		start.addEventListener('click', ()=>{
+			if (navigator.getUserMedia) {
+				navigator.getUserMedia({audio: true}, onSuccess, onFail); 																			/** ask permission of the user for use microphone or camera  */
+			} else {
+				console.warn('navigator.getUserMedia not present');
+			}
+    });
+    
+    function showCode() {
+      pre.classList.toggle('hide');
+    }
+
+		pre.innerHTML = document.querySelector('.scriptCode').innerHTML;
+	</script>
+</body>
+</html>

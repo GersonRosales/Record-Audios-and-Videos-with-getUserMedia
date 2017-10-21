@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/css/materialize.min.css">
+	<script src="https://webrtcexperiment-webrtc.netdna-ssl.com/RecordRTC.js"></script>
+	<title>Document</title>
+</head>
+
+<body>
+	<a href="./index.html"> << back</a>
+	<div class="center-align">
+		<h1>Example 6 - <span>Version_8 </span></h1>
+		<p>getUserMedia() - <a href="https://webrtcexperiment-webrtc.netdna-ssl.com/RecordRTC.js">RecordRTC</a> </p>
+		<audio controls></audio>
+		<br>
+		<button class="btn waves-effect waves-light" id="start" >Start</button>
+		<button class="btn waves-effect waves-light" id="stop">Stop</button>
+    <br>
+    <br>
+		<button class="btn waves-effect waves-light" onclick="showCode()">Show Code</button>
+	</div>
+	<hr>
+	<pre style="font-family: GillSans, Calibri, Trebuchet, sans-serif;" class="hide"></pre>
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>			
+	<script class="scriptCode">
+		let audioStream;
+		let start = document.querySelector('#start');
+		let stop = document.querySelector('#stop');
+		let recordRTC;
+		let pre = document.querySelector('pre');
+
+		let record = function(audioStream) {
+			console.log('Recordin...');
+			recordRTC = RecordRTC(audioStream, {recorderType: StereoAudioRecorder});
+			recordRTC.startRecording();
+		}
+
+		function errorCallback(error) {
+			console.log('maybe another application is using the device');
+		}
+
+		start.addEventListener('click', () => {
+			navigator.mediaDevices.getUserMedia({audio: true, video: false}).then(record).catch(errorCallback);																	/** ask permission of the user for use microphone or camera  */
+		});
+
+		stop.addEventListener('click', () => {
+			console.log('Stop Recordin...');
+			recordRTC.stopRecording(function(audioURL) {
+				let recordedBlob = recordRTC.getBlob();
+
+				recordRTC.getDataURL(function(dataURL) {
+					let audio = document.querySelector('audio');
+					audio.src = dataURL;
+				});
+			});
+		});
+
+    function showCode() {
+      pre.classList.toggle('hide');
+    }
+
+		pre.innerHTML = document.querySelector('.scriptCode').innerHTML;
+	</script>
+</body>
+</html>
