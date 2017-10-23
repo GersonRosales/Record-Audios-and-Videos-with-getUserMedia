@@ -83,7 +83,7 @@
 			} else {
 				console.warn('navigator.getUserMedia not present');
 			}
-		})
+		});
 
 		var getBufferCallback = function(buffers) {
 			console.log('getBufferCallback');
@@ -96,7 +96,7 @@
 			newSource.buffer = newBuffer;
 			newSource.connect( context.destination );
 			newSource.start(0);
-		}
+		};
     
     function showCode() {
       pre.classList.toggle('hide');

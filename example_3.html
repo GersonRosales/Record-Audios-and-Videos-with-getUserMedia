@@ -12,9 +12,10 @@
 	<a href="./index.html"> << back</a>
 	<div class="center-align">
 		<h1>Example 3 - <span>Version_8 </span></h1>
-		<p>getUserMedia() - getAudioTracks() - AudioContext() - createMediaStreamSource()</p>
+		<p>getUserMedia() - getAudioTracks() - AudioContext() - createMediaStreamSource() - <a href="https://github.com/higuma/mp3-lame-encoder-js">Mp3LameEncoder()</a></p>
 		<button class="btn waves-effect waves-light" onclick="start()" id="startBtn">Start</button>
 		<button class="btn waves-effect waves-light" id="stopBtn">Stop</button>
+		<br>		
 		<audio controls></audio>
 		<br>
 		<a id="download" class="hide">Download Audio</a>
@@ -24,6 +25,7 @@
 	<hr>
 	<pre style="font-family: GillSans, Calibri, Trebuchet, sans-serif;" class="hide"></pre>
 
+	<script src="./Mp3LameEncoder.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>
 	<script class="scriptCode">
@@ -33,59 +35,52 @@
 		let downloadLink = document.getElementById('download');
 		let arrayAudio = [];
 		let audioElement = document.querySelector('audio');
+		let encoder = null;
 
 		function start() {
 			navigator.mediaDevices.getUserMedia({ audio: true, video: false })																									/** ask permission of the user for use microphone or camera  */
-			.then(gotStreamMethod)
+			.then(gotStreamMethod2)
 			.catch(logError);
 		}
 
-		function gotStreamMethod(stream) {
-			console.log('stream');  
-			console.log(stream);
+		function getBuffers(event) {
+			var buffers = [];
+			for (var ch = 0; ch < 2; ++ch)
+				buffers[ch] = event.inputBuffer.getChannelData(ch);
+			return buffers;
+		}
 
-			let dataAudioTracks = stream.getAudioTracks();
+		function gotStreamMethod2(stream) {
+			window.AudioContext = window.AudioContext || window.webkitAudioContext;																							/** detecte the correct AudioContext for the browser */
 
-			dataAudioTracks.forEach(function (track) {
-				console.log(track);
+			config = {
+					bufferLen: 4096,
+					numChannels: 2,
+					mimeType: 'audio/mpeg'
+			};
 
-				track.onended = function () {
-					console.log(stream.active);
-					console.log(track.readyState);
-					startBtn.disabled = false;
-				};
-				
-				window.AudioContext = window.AudioContext || window.webkitAudioContext;																						/** detecte the correct AudioContext for the browser */
-				let audioContext = new AudioContext();
-				let mediaStreamSource = audioContext.createMediaStreamSource(stream);
-				let processor = audioContext.createScriptProcessor(1024, 1, 1);
+			let audioContext = new AudioContext();
+			let microphone = audioContext.createMediaStreamSource(stream);																											/** Create a MediaStreamAudioSourceNode for the microphone */
+			let track = stream.getTracks()[0];
+			processor = (audioContext.createScriptProcessor || audioContext.createJavaScriptNode)																/** Create a ScriptProcessorNode with a bufferSize of 4096 and two input and output channel */
+										.call(audioContext, config.bufferLen, config.numChannels, config.numChannels);
+			encoder = new Mp3LameEncoder(audioContext.sampleRate, 160);
 
-				// mediaStreamSource.connect(audioContext.destination);
-				processor.connect(audioContext.destination);
+			processor.onaudioprocess = function(event) {																																				/** Give the node a function to process audio events */
+				console.log('onaudioprocess');
+				console.log(event);
+				encoder.encode(getBuffers(event));
+			};
 
-				processor.onaudioprocess = function(e) {
-					// Do something with the data, i.e Convert this to WAV
-					console.log(e.inputBuffer);
-					arrayAudio.push(e.inputBuffer);
-					// console.log(e.inputBuffer.getChannelData(0));
-					// arrayAudio.push(e.inputBuffer.getChannelData(0));
-					
-					/*arrayAudio = e.outputBuffer.getChannelData(0);
-					for (var i = 0; i < arrayAudio.length; i++) {
-						arrayAudio[i] = Math.random();
-					}*/
+			microphone.connect(processor);																																											/** connect the AudioBufferSourceNode to the gainNode */
+			processor.connect(audioContext.destination);
 
-				};
-
-				stop_Btn.addEventListener('click', function(){
-					console.log('click Stop');
-					track.stop();
-					audioContext.close();
-					audioElement.src = URL.createObjectURL(new Blob(arrayAudio));
-					downloadLink.href = URL.createObjectURL(new Blob(arrayAudio));
-					downloadLink.download = 'testAudio.wav';
-					downloadLink.classList.remove('hide');
-				});
+			stop_Btn.addEventListener('click', function(){
+				console.log('encoder.finish()');
+				track.stop();
+				microphone.disconnect();
+				processor.disconnect();
+				audioElement.src = URL.createObjectURL(encoder.finish());
 			});
 		}
 
@@ -97,7 +92,7 @@
     function showCode() {
       pre.classList.toggle('hide');
 		}
-		
+
 		pre.innerHTML = document.querySelector('.scriptCode').innerHTML;
 	</script>
 </body>
