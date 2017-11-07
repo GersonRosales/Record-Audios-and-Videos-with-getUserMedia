@@ -1,106 +1,76 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta http-equiv="X-UA-Compatible" content="ie=edge">
 	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/css/materialize.min.css">
-	<title>Example 4</title>
+	<script src="https://webrtcexperiment-webrtc.netdna-ssl.com/RecordRTC.js"></script>
+	<title>Document</title>
 </head>
+
 <body>
 	<a href="./index.html"> << back</a>
 	<div class="center-align">
-		<h1>Example 4</h1>
-		<p>getUserMedia() - getAudioTracks() - AudioContext()</p>
-		<input type="button" value="Start1" onclick="start()" id="startBtn">
-		<input type="button" value="Start2" onclick="start()" id="startBtn2">
-		<input type="button" value="Stop" id="stopBtn">
-		<video controls src=""></video>
-		<a id="download">Download</a>
-		<audio controls autoplay></audio>
+		<h1>Example 5 - <span>Version_8 </span></h1>
+		<p>getUserMedia() - <a href="https://webrtcexperiment-webrtc.netdna-ssl.com/RecordRTC.js">RecordRTC</a> </p>
+		<audio controls></audio>
+		<br>
+		<button class="btn waves-effect waves-light js-start">Start</button>
+		<button class="btn waves-effect waves-light js-stop" disabled>Stop</button>
+    <br>
+    <br>
+		<button class="btn waves-effect waves-light js-code">Show Code</button>
 	</div>
+	<hr>
+	<pre style="font-family: GillSans, Calibri, Trebuchet, sans-serif;" class="hide"></pre>
 
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>
-	<script>
-		let arrayAudio = [];
-		var startBtn = document.getElementById('startBtn');
-		var startBtn2 = document.getElementById('startBtn2');
-		let stop_Btn = document.getElementById('stopBtn');
-		let videoElement = document.querySelector('video');
-		let audioElement = document.querySelector('audio');
-		const downloadLink = document.getElementById('download');
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>			
+	<script class="containerScript">
+		let audioStream;
+		let startBtn = document.querySelector('.js-start');
+		let stopBtn = document.querySelector('.js-stop');
+		let recordRTC;
+		let pre = document.querySelector('pre');
+		let codeBtn = document.querySelector('.js-code');
 
-		function start() {
-			navigator.mediaDevices.getUserMedia({ audio: true, video: false })
-			.then(gotStreamMethod5)
-			.catch(logError);
-			// startBtn.disabled = true;
+		let record = function(audioStream) {
+			console.log('Recordin...');
+			startBtn.setAttribute('disabled', true);
+			stopBtn.removeAttribute('disabled');
+			recordRTC = RecordRTC(audioStream, {recorderType: StereoAudioRecorder});
+			recordRTC.startRecording();
 		}
 
-		function gotStreamMethod5(stream) {
-			var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-			var source;
-			// var button = startBtn;
-			// var pre = document.querySelector('pre');
-			// var myScript = document.querySelector('script');
-			
-			// pre.innerHTML = myScript.innerHTML;
-			
-			// Stereo
-			var channels = 2;
-			// Create an empty two second stereo buffer at the
-			// sample rate of the AudioContext
-			var frameCount = audioCtx.sampleRate * 2.0;
-			
-			// var source = audioCtx.createMediaStreamSource(stream);
-
-			var myArrayBuffer = audioCtx.createBuffer(2, frameCount, audioCtx.sampleRate);
-
-			// console.log('gotStreamMethod5');
-
-			startBtn.addEventListener('click', function(){
-				console.log('button.onclick = function() {');
-				// Fill the buffer with white noise;
-				//just random values between -1.0 and 1.0
-				for (var channel = 0; channel < channels; channel++) {
-						console.log('channel '+channel);
-					// This gives us the actual ArrayBuffer that contains the data
-					var nowBuffering = myArrayBuffer.getChannelData(channel);
-					for (var i = 0; i < frameCount; i++) {
-						console.log('channel '+channel);					
-						// Math.random() is in [0; 1.0]
-						// audio needs to be in [-1.0; 1.0]
-						nowBuffering[i] = Math.random() * 2 - 1;
-					}
-				}
-			
-				// Get an AudioBufferSourceNode.
-				// This is the AudioNode to use when we want to play an AudioBuffer
-				source = audioCtx.createBufferSource();
-				// set the buffer in the AudioBufferSourceNode
-				source.buffer = myArrayBuffer;
-				// connect the AudioBufferSourceNode to the
-				// destination so we can hear the sound
-				source.connect(audioCtx.destination);
-				// start the source playing
-				// source.start();
-			});
-
-			startBtn2.addEventListener('click', function(){
-				source.start();
-			});
-			
-			stop_Btn.addEventListener('click', function(){
-				console.log('click Stop');
-			});
+		function errorCallback(error) {
+			console.log('maybe another application is using the device');
 		}
 
-		function logError(error) {
-			alert(error);
-			console.log(error);
-		}
+		startBtn.addEventListener('click', () => {
+			navigator.mediaDevices.getUserMedia({audio: true, video: false}).then(record).catch(errorCallback);																	/** ask permission of the user for use microphone or camera  */
+		});
+
+		stopBtn.addEventListener('click', () => {
+			console.log('Stop Recordin...');
+			stopBtn.setAttribute('disabled', true);
+			startBtn.removeAttribute('disabled');
+			
+			recordRTC.stopRecording(function(audioURL) {
+				let recordedBlob = recordRTC.getBlob();
+
+				recordRTC.getDataURL(function(dataURL) {
+					let audio = document.querySelector('audio');
+					audio.src = dataURL;
+				});
+			});
+		});
+
+		codeBtn.addEventListener('click', () => {
+			pre.classList.toggle('hide');
+			pre.innerHTML = document.querySelector('.containerScript').innerHTML;
+		});
 	</script>
 </body>
 </html>

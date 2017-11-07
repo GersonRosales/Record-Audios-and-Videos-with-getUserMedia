@@ -15,49 +15,60 @@
 		<p>getUserMedia() - getTracks()</p>
 		<audio controls autoplay></audio>
 		<br>
-		<button class="btn waves-effect waves-light" onclick="start()" id="startBtn">Start</button>
-		<button class="btn waves-effect waves-light" id="stopBtn">Stop</button>
+		<button class="btn waves-effect waves-light" id="startBtn">Start</button>
+		<button class="btn waves-effect waves-light" id="stopBtn" disabled>Stop</button>
 		<br>
 		<br>
-		<button class="btn waves-effect waves-light" onclick="showCode()">Show Code</button>
+		<button class="btn waves-effect waves-light js-code">Show Code</button>
 	</div>
 	<hr>
 	<pre style="font-family: GillSans, Calibri, Trebuchet, sans-serif;" class="hide"></pre>
 
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>
-	<script class="scriptCode">
+	<script class="containerScript">
 		let startBtn = document.getElementById('startBtn');
 		let stopBtn = document.getElementById('stopBtn');
+		let codeBtn = document.querySelector('.js-code');
 		let audioElement = document.querySelector('audio');
 		let pre = document.querySelector('pre');
 
-		function start() {
-			navigator.mediaDevices.getUserMedia({ audio: true, video: false }) 																						/** ask permission of the user for use microphone or camera  */
+		startBtn.addEventListener('click', () => {
+			/** 
+			 * ask permission of the user for use microphone or camera  
+			 */
+			navigator.mediaDevices.getUserMedia({ audio: true, video: false })
 			.then(gotStreamMethod2)
 			.catch(logError);
-		}
+		});
 
-		function gotStreamMethod2(stream) {
-			window.stream = stream; 																																											/** make stream available to console*/
+		let gotStreamMethod2 = (stream) => {
+			startBtn.setAttribute('disabled', true);
+			stopBtn.removeAttribute('disabled');
+
+			window.stream = stream;
+			/** 
+			 * make stream available to console
+			 */
 			audioElement.srcObject = stream;
 			track = stream.getTracks()[0];
 
-			stopBtn.addEventListener('click', ()=> {
+			stopBtn.addEventListener('click', () => {
+				startBtn.removeAttribute('disabled');
+				stopBtn.setAttribute('disabled', true);
 				track.stop();
 			});
 		}
 
-		function logError(error) {
+		let logError = (error) => {
 			alert(error);
 			console.log(error);
 		}
 
-    function showCode() {
+    codeBtn.addEventListener('click', () => {
       pre.classList.toggle('hide');
-    }
-
-		pre.innerHTML = document.querySelector('.scriptCode').innerHTML;
+			pre.innerHTML = document.querySelector('.containerScript').innerHTML;
+    });
 	</script>
 </body>
 </html>

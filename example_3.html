@@ -14,12 +14,12 @@
 		<h1>Example 3 - <span>Version_8 </span></h1>
 		<p>getUserMedia() - getAudioTracks() - AudioContext() - createMediaStreamSource() - <a href="https://github.com/higuma/mp3-lame-encoder-js">Mp3LameEncoder()</a></p>
 		<div>
-			<canvas class="js-volume-readout" width="20" height="140"></canvas>
+			<canvas class="js-volume" width="20" height="140"></canvas>
 		</div>
 		<audio controls type="audio/mpeg"></audio>
 		<br>
-		<button class="btn waves-effect waves-light" id="startBtn">Start</button>
-		<button class="btn waves-effect waves-light" id="stopBtn" disabled>Stop</button>
+		<button class="btn waves-effect waves-light js-start">Start</button>
+		<button class="btn waves-effect waves-light js-stop" disabled>Stop</button>
 		<br>
 		<a id="download" class="hide">Download Audio</a>
     <br>
@@ -42,8 +42,8 @@
 		let elementVolume = document.querySelector('.js-volume');
     let ctx = elementVolume.getContext('2d');
 		let codeBtn = document.querySelector('.js-code');
-		let startBtn = document.getElementById('startBtn');
-		let stopBtn = document.getElementById('stopBtn');
+		let startBtn = document.querySelector('.js-start');
+		let stopBtn = document.querySelector('.js-stop');
 		let pre = document.querySelector('pre');
 		let downloadLink = document.getElementById('download');
 		let arrayAudio = [];

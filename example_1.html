@@ -15,28 +15,33 @@
 		<p>getUserMedia() - AudioContext() - <a href="https://github.com/mattdiamond/Recorderjs">RecorderJS</a> - exportWAV()</p>
 		<audio controls autoplay></audio>
 		<br>
-		<button class="btn waves-effect waves-light" id="startRecording" >Start</button>
-    <button class="btn waves-effect waves-light" id="stopRecording">Stop</button>
+		<button class="btn waves-effect waves-light js-start">Start</button>
+    <button class="btn waves-effect waves-light js-stop" disabled>Stop</button>
     <br>
     <br>
-		<button class="btn waves-effect waves-light" onclick="showCode()">Show Code</button>
+		<button class="btn waves-effect waves-light js-code">Show Code</button>
 	</div>
 	<hr>
 	<pre style="font-family: GillSans, Calibri, Trebuchet, sans-serif;" class="hide"></pre>
 
-	<script src="./recorder.js"> </script>
+	<script src="./recorder.js"></script>
 	<script src="https://cdn.webrtc-experiment.com/MediaStreamRecorder.js"> </script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>
-	<script class="scriptCode">
+	<script class="containerScript">
 		let recorder;
 		let context;
 		let audio = document.querySelector('audio');
-		let start = document.querySelector('#startRecording');
-		let stop = document.querySelector('#stopRecording');
+		let startBtn = document.querySelector('.js-start');
+		let stopBtn = document.querySelector('.js-stop');
+		let codeBtn = document.querySelector('.js-code');
 		let pre = document.querySelector('pre');
 
 		window.URL = window.URL || window.webkitURL;
+		/** 
+		 * Detecte the correct AudioContext for the browser 
+		 * */
+		window.AudioContext = window.AudioContext || window.webkitAudioContext;
 		navigator.getUserMedia  = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
 
 		let onFail = function(e) {
@@ -45,39 +50,42 @@
 		};
 
 		let onSuccess = function(s) {
-			s.getAudioTracks().forEach(function (track) {
-				console.log('Recording...');
-				console.log(track);
-				window.AudioContext = window.AudioContext || window.webkitAudioContext;    										/** detecte the correct AudioContext for the browser */
-				context = new AudioContext();
-				var mediaStreamSource = context.createMediaStreamSource(s);
-				recorder = new Recorder(mediaStreamSource);
-				recorder.record();
+			console.log('Recording...');
+			let tracks = s.getTracks();
+			startBtn.setAttribute('disabled', true);
+			stopBtn.removeAttribute('disabled');
+			context = new AudioContext();
+			let mediaStreamSource = context.createMediaStreamSource(s);
+			recorder = new Recorder(mediaStreamSource);
+			recorder.record();
 
-				stop.addEventListener('click', ()=>{
-					console.log('Stop Recording...');
-					recorder.stop();
-					track.stop();
-					recorder.exportWAV(function(s) {
-						audio.src = window.URL.createObjectURL(s);
-					});
+			stopBtn.addEventListener('click', ()=>{
+				console.log('Stop Recording...');
+				stopBtn.setAttribute('disabled', true);
+				startBtn.removeAttribute('disabled');
+				recorder.stop();
+				tracks.forEach(track => track.stop());
+				recorder.exportWAV(function(s) {
+					audio.src = window.URL.createObjectURL(s);
 				});
 			});
 		}
 
-		start.addEventListener('click', ()=>{
+		startBtn.addEventListener('click', ()=>{
 			if (navigator.getUserMedia) {
-				navigator.getUserMedia({audio: true}, onSuccess, onFail); 																			/** ask permission of the user for use microphone or camera  */
+				/** 
+				 * ask permission of the user for use microphone or camera  
+				 */
+				navigator.getUserMedia({audio: true}, onSuccess, onFail); 																			
 			} else {
 				console.warn('navigator.getUserMedia not present');
 			}
-    });
-    
-    function showCode() {
-      pre.classList.toggle('hide');
-    }
-
-		pre.innerHTML = document.querySelector('.scriptCode').innerHTML;
+		});
+		
+		codeBtn.addEventListener('click', () => {
+			pre.classList.toggle('hide');
+			pre.innerHTML = document.querySelector('.containerScript').innerHTML;
+		});
 	</script>
 </body>
 </html>

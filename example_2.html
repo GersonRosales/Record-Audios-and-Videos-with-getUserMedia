@@ -15,121 +15,24 @@
 		<p>getUserMedia() - MediaRecorder</p>
 		<audio controls id="audio" src=""></audio>
 		<br>
-		<button class="btn waves-effect waves-light" id="start">Start</button>
-		<button class="btn waves-effect waves-light" id="stop">Stop</button>
+		<button class="btn waves-effect waves-light" id="startRecording">Start</button>
+		<button class="btn waves-effect waves-light" id="stopRecording" disabled>Stop</button>
 		<br>
 		<a id="download" class="hide">Download Audio</a>
 		<br>
-		<button class="btn waves-effect waves-light" onclick="showCode()">Show Code</button>
+		<button class="btn waves-effect waves-light js-code">Show Code</button>
 	</div>
 	<hr>
 	<pre style="font-family: GillSans, Calibri, Trebuchet, sans-serif;" class="hide"></pre>
 	
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>			
-	
-
-	<script class="scriptCode">
+	<script class="containerScript">
 		window.AudioContext = window.AudioContext || window.webkitAudioContext;
     navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
     window.URL = window.URL || window.webkitURL;
 
-		if (typeof MediaRecorder === 'undefined' || !navigator.getUserMedia) {
-			alert('MediaRecorder not supported on your browser, use Firefox 30 or Chrome 49 instead.');
-		}
-
-		if (getBrowser() == "Chrome") {
-			console.log('if Chrome');
-			var constraints = {"audio": true, "video": {  "mandatory": {  "minWidth": 640,  "maxWidth": 640, "minHeight": 480,"maxHeight": 480 }, "optional": [] } }; //Chrome
-		} else if (getBrowser() == "Firefox") {
-			console.log('else Firefox');
-			var constraints = {audio: true, video: { width: { min: 640, ideal: 640, max: 640 },  height: { min: 480, ideal: 480, max: 480 } } }; //Firefox
-		} else {
-			console.log('else Chrome');
-			var constraints = {"audio": true, "video": false };//Chrome
-		}
-
-		let pre = document.querySelector('pre');
-		let shouldStop = false;
-		let stopped = false;
-		let mediaRecorder;
-		let audio = document.querySelector('audio');
-		let downloadLink = document.getElementById('download');
-		let startButton = document.getElementById('start');
-		let stopButton = document.getElementById('stop');
-
-		function handleSuccess(stream) {
-			let options;
-			let recordedChunks = [];
-
-			if (typeof MediaRecorder.isTypeSupported == 'function'){
-				if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
-					options = {mimeType: 'audio/webm;codecs=opus'};
-				} else if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) {
-					options = {mimeType: 'audio/ogg;codecs=opus'};
-				}
-				console.log('mimeType: '+options.mimeType);
-				mediaRecorder = new MediaRecorder(stream, options);
-			} else {
-				console.log('mimeType DEFAULT');
-				mediaRecorder = new MediaRecorder(stream);
-			}
-
-			mediaRecorder.start(10);
-
-			mediaRecorder.addEventListener('dataavailable', function(e) {
-				if (e.data.size > 0) {
-					recordedChunks.push(e.data);
-					console.log(e.data);
-				}
-
-				if(shouldStop === true && stopped === false) {
-					console.log('Stop');
-					mediaRecorder.stop();
-					stream.getAudioTracks().forEach(function (track) {
-						track.stop();
-					});
-					stopped = true;
-				}
-			});
-
-			mediaRecorder.addEventListener('start', function(e) {
-				console.log('Started, state = ' + mediaRecorder.state);
-			});
-
-			mediaRecorder.addEventListener('stop', function() {
-				audio.src = URL.createObjectURL(new Blob(recordedChunks));
-				downloadLink.href = URL.createObjectURL(new Blob(recordedChunks));
-				downloadLink.download = 'AudioTest.wav';
-				downloadLink.classList.remove('hide');
-			});
-
-			mediaRecorder.addEventListener('warning', function(e) {
-				log('Warning: ' + e);
-			});
-
-			mediaRecorder.addEventListener('error', evt => {
-				console.log(evt);
-				reject(evt);
-			});
-		};
-
-		function errorCallback (error) {
-			alert(error);
-			console.log('navigator.getUserMedia error: ', error);	
-		};
-
-		function start() {
-			navigator.getUserMedia({"audio": true, "video": false}, handleSuccess, errorCallback);
-		}
-
-		startButton.addEventListener('click', start);
-
-		stopButton.addEventListener('click', function() {
-			shouldStop = true;
-		});
-
-		function getBrowser() {
+		let getBrowser = () => {
 			console.log('function getBrowser() {');
 			var nVer = navigator.appVersion;
 			var nAgt = navigator.userAgent;
@@ -190,11 +93,110 @@
 			return browserName;
 		}
 
-    function showCode() {
-      pre.classList.toggle('hide');
+		if (typeof MediaRecorder === 'undefined' || !navigator.getUserMedia) {
+			alert('MediaRecorder not supported on your browser, use Firefox 30 or Chrome 49 instead.');
 		}
-		
-		pre.innerHTML = document.querySelector('.scriptCode').innerHTML;
+
+		if (getBrowser() == "Chrome") {
+			console.log('if Chrome');
+			var constraints = {"audio": true, "video": {  "mandatory": {  "minWidth": 640,  "maxWidth": 640, "minHeight": 480,"maxHeight": 480 }, "optional": [] } }; //Chrome
+		} else if (getBrowser() == "Firefox") {
+			console.log('else Firefox');
+			var constraints = {audio: true, video: { width: { min: 640, ideal: 640, max: 640 },  height: { min: 480, ideal: 480, max: 480 } } }; //Firefox
+		} else {
+			console.log('else Chrome');
+			var constraints = {"audio": true, "video": false };//Chrome
+		}
+
+		let pre = document.querySelector('pre');
+		let shouldStop;
+		let stopped;
+		let mediaRecorder;
+		let audio = document.querySelector('audio');
+		let downloadLink = document.getElementById('download');
+		let startBtn = document.getElementById('startRecording');
+		let stopBtn = document.getElementById('stopRecording');
+		let codeBtn = document.querySelector('.js-code');
+
+		let handleSuccess = (stream) => {
+			let options;
+			let recordedChunks = [];
+			shouldStop = false;
+			stopped = false;
+
+			if (typeof MediaRecorder.isTypeSupported == 'function'){
+				if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+					options = {mimeType: 'audio/webm;codecs=opus'};
+				} else if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) {
+					options = {mimeType: 'audio/ogg;codecs=opus'};
+				}
+				console.log('mimeType: '+options.mimeType);
+				mediaRecorder = new MediaRecorder(stream, options);
+			} else {
+				console.log('mimeType DEFAULT');
+				mediaRecorder = new MediaRecorder(stream);
+			}
+
+			startBtn.setAttribute('disabled', true);
+			stopBtn.removeAttribute('disabled');
+			mediaRecorder.start(10);
+
+			mediaRecorder.addEventListener('dataavailable', function(e) {
+				if (e.data.size > 0) {
+					recordedChunks.push(e.data);
+					console.log(e.data);
+				}
+
+				if(shouldStop === true && stopped === false) {
+					console.log('Stop');
+					stopBtn.setAttribute('disabled', true);
+					startBtn.removeAttribute('disabled');
+					mediaRecorder.stop();
+					stream.getAudioTracks().forEach(function (track) {
+						track.stop();
+					});
+					stopped = true;
+				}
+			});
+
+			mediaRecorder.addEventListener('start', function(e) {
+				console.log('Started, state = ' + mediaRecorder.state);
+			});
+
+			mediaRecorder.addEventListener('stop', function() {
+				audio.src = URL.createObjectURL(new Blob(recordedChunks));
+				downloadLink.href = URL.createObjectURL(new Blob(recordedChunks));
+				downloadLink.download = 'AudioTest.wav';
+				downloadLink.classList.remove('hide');
+			});
+
+			mediaRecorder.addEventListener('warning', function(e) {
+				log('Warning: ' + e);
+			});
+
+			mediaRecorder.addEventListener('error', evt => {
+				console.log(evt);
+				reject(evt);
+			});
+		};
+
+		let errorCallback = (error) => {
+			alert(error);
+			console.log('navigator.getUserMedia error: ', error);	
+		};
+
+		startBtn.addEventListener('click', () => {
+			navigator.getUserMedia({"audio": true, "video": false}, handleSuccess, errorCallback);
+		});
+
+		stopBtn.addEventListener('click', () => {
+			shouldStop = true;
+		});
+
+		codeBtn.addEventListener('click', () => {
+			pre.classList.toggle('hide');
+			pre.innerHTML = document.querySelector('.containerScript').innerHTML;
+		});
 	</script>
 </body>
 </html>
