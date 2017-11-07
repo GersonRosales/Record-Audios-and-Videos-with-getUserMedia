@@ -11,7 +11,7 @@
 <body>
 	<a href="./index.html"> << back</a>
 	<div class="center-align">
-		<h1>Example 3 - <span>Version_8 </span></h1>
+		<h1>Example 3 - <span>Version_15 </span></h1>
 		<p>getUserMedia() - getAudioTracks() - AudioContext() - createMediaStreamSource() - <a href="https://github.com/higuma/mp3-lame-encoder-js">Mp3LameEncoder()</a></p>
 		<div>
 			<canvas class="js-volume" width="20" height="140"></canvas>
@@ -38,156 +38,175 @@
 		 * */
 		window.AudioContext = window.AudioContext || window.webkitAudioContext;
 		navigator.getUserMedia  = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
-
-		let elementVolume = document.querySelector('.js-volume');
-    let ctx = elementVolume.getContext('2d');
-		let codeBtn = document.querySelector('.js-code');
+		var recorder = new RecordVoiceAudios();
 		let startBtn = document.querySelector('.js-start');
 		let stopBtn = document.querySelector('.js-stop');
-		let pre = document.querySelector('pre');
-		let downloadLink = document.getElementById('download');
-		let arrayAudio = [];
-		let audioElement = document.querySelector('audio');
-		let encoder = null;
-		let microphone;
-		let isRecording = false;
+		startBtn.onclick = recorder.startRecord;
+		stopBtn.onclick = recorder.stopRecord;
 
-		startBtn.addEventListener('click', () => {
-			/**
-			 *  ask permission of the user for use microphone or camera  
-			 * */
-			navigator.mediaDevices.getUserMedia({ audio: true, video: false })
-			.then(gotStreamMethod)
-			.catch(logError);
-		});
-
-		let getBuffers = (event) => {
-			var buffers = [];
-			for (var ch = 0; ch < 2; ++ch)
-				buffers[ch] = event.inputBuffer.getChannelData(ch);
-			return buffers;
-		}
-
-		let gotStreamMethod = (stream) => {
-			startBtn.setAttribute('disabled', true);
-			stopBtn.removeAttribute('disabled');
-			audioElement.src = "";
-			config = {
+		function RecordVoiceAudios() {
+			let elementVolume = document.querySelector('.js-volume');
+			let ctx = elementVolume.getContext('2d');
+			let codeBtn = document.querySelector('.js-code');
+			let pre = document.querySelector('pre');
+			let downloadLink = document.getElementById('download');
+			let audioElement = document.querySelector('audio');
+			let encoder = null;
+			let microphone;
+			let isRecording = false;
+			var audioContext;
+			let processor;
+			let config = {
 				bufferLen: 4096,
 				numChannels: 2,
 				mimeType: 'audio/mpeg'
 			};
-			isRecording = true;
-			let audioContext = new AudioContext();
-			/** 
-			 * Create a ScriptProcessorNode with a bufferSize of 
-			 * 4096 and two input and output channel 
-			 * */
-			let tracks = stream.getTracks();
-			processor = (audioContext.createScriptProcessor || audioContext.createJavaScriptNode).call(audioContext, config.bufferLen, config.numChannels, config.numChannels);
-			processor.connect(audioContext.destination);
-			encoder = new Mp3LameEncoder(audioContext.sampleRate, 160);
-			/** 
-			 * Give the node a function to process audio events 
-			*/
-			processor.onaudioprocess = function(event) {
-				encoder.encode(getBuffers(event));
-			};
-			/** 
-			 * Create a MediaStreamAudioSourceNode for the microphone 
-			 * */
-			microphone = audioContext.createMediaStreamSource(stream);
-			/** 
-			 * connect the AudioBufferSourceNode to the gainNode 
-			 * */
-			microphone.connect(processor);
 
-			stopBtnRecord = () => {
-				console.log('stopBtnRecord');
-				isRecording = false;
-				startBtn.removeAttribute('disabled');
-				stopBtn.setAttribute('disabled', true);
-				audioContext.close();
-				processor.disconnect();
-				tracks.forEach(track => track.stop());
-				audioElement.src = URL.createObjectURL(encoder.finish());
-			};
-			
-			analizer(audioContext);
-		}
-
-		stopBtn.addEventListener('click', () => {
-			stopBtnRecord();
-		});
-
-		let analizer = (context) => {
-			let listener = context.createAnalyser();
-			microphone.connect(listener);
-			listener.fftSize = 256;
-			var bufferLength = listener.frequencyBinCount;
-			let analyserData = new Uint8Array(bufferLength);
-
-			let getVolume = () => {
-				let volumeSum = 0;
-				let volumeMax = 0;
-	
-				listener.getByteFrequencyData(analyserData);
-	
-				for (let i = 0; i < bufferLength; i++) {
-					volumeSum += analyserData[i];
+			this.startRecord = function() {
+				audioContext = new AudioContext();
+				/** 
+				* Create a ScriptProcessorNode with a bufferSize of 
+				* 4096 and two input and output channel 
+				* */
+				if (audioContext.createJavaScriptNode) {
+					processor = audioContext.createJavaScriptNode(config.bufferLen, config.numChannels, config.numChannels);
+				} else if (audioContext.createScriptProcessor) {
+					processor = audioContext.createScriptProcessor(config.bufferLen, config.numChannels, config.numChannels);
+				} else {
+					console.log('WebAudio API has no support on this browser.');
 				}
-	
-				let volume = volumeSum / bufferLength;
 
-				if (volume > volumeMax)
-					volumeMax = volume;
-	
-				drawAudio(volume / 10);
+				processor.connect(audioContext.destination);
 				/**
-				 * Call getVolume several time for catch the level until it stop the record
-				 */
-				return setTimeout(()=>{
-					if (isRecording)
-						getVolume();
-					else
-						drawAudio(0);
-				}, 10);
+				*  ask permission of the user for use microphone or camera  
+				* */
+				navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+				.then(gotStreamMethod)
+				.catch(logError);
+			};
+
+			let getBuffers = (event) => {
+				var buffers = [];
+				for (var ch = 0; ch < 2; ++ch)
+					buffers[ch] = event.inputBuffer.getChannelData(ch);
+				return buffers;
 			}
 
-			getVolume();
-		}
+			let gotStreamMethod = (stream) => {
+				startBtn.setAttribute('disabled', true);
+				stopBtn.removeAttribute('disabled');
+				audioElement.src = "";
+				config = {
+					bufferLen: 4096,
+					numChannels: 2,
+					mimeType: 'audio/mpeg'
+				};
+				isRecording = true;
 
-		let drawAudio = (volume) => {
-			ctx.save();
-    	ctx.translate(0, 120);
+				let tracks = stream.getTracks();
+				/** 
+				* Create a MediaStreamAudioSourceNode for the microphone 
+				* */
+				microphone = audioContext.createMediaStreamSource(stream);
+				/** 
+				* connect the AudioBufferSourceNode to the gainNode 
+				* */
+				microphone.connect(processor);
+				encoder = new Mp3LameEncoder(audioContext.sampleRate, 160);
+				/** 
+				* Give the node a function to process audio events 
+				*/
+				processor.onaudioprocess = function(event) {
+					encoder.encode(getBuffers(event));
+				};
 
-			for (var i = 0; i < 14; i++) {
-				fillStyle = '#ffcbcd';
-				if (i < volume)
-					fillStyle = '#ff2c77';
+				stopBtnRecord = () => {
+					console.log('stopBtnRecord');
+					isRecording = false;
+					startBtn.removeAttribute('disabled');
+					stopBtn.setAttribute('disabled', true);
+					audioContext.close();
+					processor.disconnect();
+					tracks.forEach(track => track.stop());
+					audioElement.src = URL.createObjectURL(encoder.finish());
+				};
 
-				ctx.fillStyle = fillStyle;
-				ctx.beginPath();
-				ctx.arc(10, 2, 17, 0, Math.PI * 2);
-				ctx.closePath();
-				ctx.fill();
-				ctx.translate(0, -7);
+				analizer(audioContext);
 			}
 
-			ctx.restore();
+			this.stopRecord = function() {
+				stopBtnRecord();
+			};
+
+			let analizer = (context) => {
+				let listener = context.createAnalyser();
+				microphone.connect(listener);
+				listener.fftSize = 256;
+				var bufferLength = listener.frequencyBinCount;
+				let analyserData = new Uint8Array(bufferLength);
+
+				let getVolume = () => {
+					let volumeSum = 0;
+					let volumeMax = 0;
+		
+					listener.getByteFrequencyData(analyserData);
+		
+					for (let i = 0; i < bufferLength; i++) {
+						volumeSum += analyserData[i];
+					}
+		
+					let volume = volumeSum / bufferLength;
+
+					if (volume > volumeMax)
+						volumeMax = volume;
+		
+					drawAudio(volume / 10);
+					/**
+					* Call getVolume several time for catch the level until it stop the record
+					*/
+					return setTimeout(()=>{
+						if (isRecording)
+							getVolume();
+						else
+							drawAudio(0);
+					}, 10);
+				}
+
+				getVolume();
+			}
+
+			let drawAudio = (volume) => {
+				ctx.save();
+				ctx.translate(0, 120);
+
+				for (var i = 0; i < 14; i++) {
+					fillStyle = '#ffcbcd';
+					if (i < volume)
+						fillStyle = '#ff2c77';
+
+					ctx.fillStyle = fillStyle;
+					ctx.beginPath();
+					ctx.arc(10, 2, 17, 0, Math.PI * 2);
+					ctx.closePath();
+					ctx.fill();
+					ctx.translate(0, -7);
+				}
+
+				ctx.restore();
+			}
+
+			let logError = (error) => {
+				alert(error);
+				console.log(error);
+			}
+
+			codeBtn.addEventListener('click', () => {
+				pre.classList.toggle('hide');
+				pre.innerHTML = document.querySelector('.containerScript').innerHTML;
+			});
+
+			drawAudio(0);
 		}
-
-		let logError = (error) => {
-			alert(error);
-			console.log(error);
-		}
-
-    codeBtn.addEventListener('click', () => {
-			pre.classList.toggle('hide');
-			pre.innerHTML = document.querySelector('.containerScript').innerHTML;
-		});
-
-		drawAudio(0);
 	</script>
 </body>
 </html>
