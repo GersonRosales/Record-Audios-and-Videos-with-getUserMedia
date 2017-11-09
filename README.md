@@ -9,4 +9,4 @@ These are some examples to test before using some recording API, not all the exa
 
 ## Run in the web
 
-https://recordtest-1e799.firebaseapp.com
+https://gersonrosales.github.io/Record-Audios-and-Videos-with-getUserMedia/
